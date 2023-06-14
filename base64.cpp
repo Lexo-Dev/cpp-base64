@@ -52,6 +52,8 @@ static const char* base64_chars[2] = {
              "0123456789"
              "-_"};
 
+static constexpr unsigned UndefinedCharPos = ~0u;
+
 static unsigned int pos_of_char(const unsigned char chr) {
  //
  // Return the position of chr within base64_encode()
@@ -63,11 +65,7 @@ static unsigned int pos_of_char(const unsigned char chr) {
     else if (chr == '+' || chr == '-') return 62; // Be liberal with input and accept both url ('-') and non-url ('+') base 64 characters (
     else if (chr == '/' || chr == '_') return 63; // Ditto for '/' and '_'
     else
- //
- // 2020-10-23: Throw std::exception rather than const char*
- //(Pablo Martin-Gomez, https://github.com/Bouska)
- //
-    throw std::runtime_error("Input is not valid base64-encoded data.");
+      return UndefinedCharPos;
 }
 
 static std::string insert_linebreaks(std::string str, size_t distance) {
@@ -205,11 +203,16 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
     //
 
        size_t pos_of_char_1 = pos_of_char(encoded_string.at(pos+1) );
+       if (pos_of_char_1 == UndefinedCharPos)
+         return std::string();
 
     //
     // Emit the first output byte that is produced in each chunk:
     //
-       ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char(encoded_string.at(pos+0)) ) << 2 ) + ( (pos_of_char_1 & 0x30 ) >> 4)));
+      const auto pos_of_char_tmp = pos_of_char(encoded_string.at(pos+0));
+      if (pos_of_char_tmp == UndefinedCharPos)
+         return std::string();
+       ret.push_back(static_cast<std::string::value_type>( ( pos_of_char_tmp << 2 ) + ( (pos_of_char_1 & 0x30 ) >> 4)));
 
        if ( ( pos + 2 < length_of_string  )       &&  // Check for data that is not padded with equal signs (which is allowed by RFC 2045)
               encoded_string.at(pos+2) != '='        &&
@@ -220,6 +223,8 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
        // Emit a chunk's second byte (which might not be produced in the last chunk).
        //
           unsigned int pos_of_char_2 = pos_of_char(encoded_string.at(pos+2) );
+         if (pos_of_char_2 == UndefinedCharPos)
+            return std::string();
           ret.push_back(static_cast<std::string::value_type>( (( pos_of_char_1 & 0x0f) << 4) + (( pos_of_char_2 & 0x3c) >> 2)));
 
           if ( ( pos + 3 < length_of_string )     &&
@@ -230,7 +235,10 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
           //
           // Emit a chunk's third byte (which might not be produced in the last chunk).
           //
-             ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char_2 & 0x03 ) << 6 ) + pos_of_char(encoded_string.at(pos+3))   ));
+            const auto pos_of_char_tmp_2 = pos_of_char(encoded_string.at(pos+3));
+            if (pos_of_char_tmp_2 == UndefinedCharPos)
+               return std::string();
+             ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char_2 & 0x03 ) << 6 ) + pos_of_char_tmp_2   ));
           }
        }
 
