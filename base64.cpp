@@ -202,14 +202,14 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
     // The last chunk produces at least one and up to three bytes.
     //
 
-       size_t pos_of_char_1 = pos_of_char(std::uint8_t(encoded_string.at(pos+1)));
+       size_t pos_of_char_1 = pos_of_char(static_cast<unsigned char>(encoded_string.at(pos+1)));
        if (pos_of_char_1 == UndefinedCharPos)
          return std::string();
 
     //
     // Emit the first output byte that is produced in each chunk:
     //
-      const auto pos_of_char_tmp = pos_of_char(std::uint8_t(encoded_string.at(pos+0)));
+      const auto pos_of_char_tmp = pos_of_char(static_cast<unsigned char>(encoded_string.at(pos+0)));
       if (pos_of_char_tmp == UndefinedCharPos)
          return std::string();
        ret.push_back(static_cast<std::string::value_type>( ( pos_of_char_tmp << 2 ) + ( (pos_of_char_1 & 0x30 ) >> 4)));
@@ -222,7 +222,7 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
        //
        // Emit a chunk's second byte (which might not be produced in the last chunk).
        //
-          unsigned int pos_of_char_2 = pos_of_char(std::uint8_t(encoded_string.at(pos+2)) );
+          unsigned int pos_of_char_2 = pos_of_char(static_cast<unsigned char>(encoded_string.at(pos+2)) );
          if (pos_of_char_2 == UndefinedCharPos)
             return std::string();
           ret.push_back(static_cast<std::string::value_type>( (( pos_of_char_1 & 0x0f) << 4) + (( pos_of_char_2 & 0x3c) >> 2)));
@@ -235,7 +235,7 @@ static std::string decode(String const& encoded_string, bool remove_linebreaks) 
           //
           // Emit a chunk's third byte (which might not be produced in the last chunk).
           //
-            const auto pos_of_char_tmp_2 = pos_of_char(std::uint8_t(encoded_string.at(pos+3)));
+            const auto pos_of_char_tmp_2 = pos_of_char(static_cast<unsigned char>(encoded_string.at(pos+3)));
             if (pos_of_char_tmp_2 == UndefinedCharPos)
                return std::string();
              ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char_2 & 0x03 ) << 6 ) + pos_of_char_tmp_2   ));
